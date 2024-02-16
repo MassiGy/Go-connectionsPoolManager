@@ -25,7 +25,7 @@ var connectionsPool types.ConnectionsPool
 	var connectionsPoolManager types.ConnectionsPoolManager
 */
 
-var loggingHandler chan []byte
+// var loggingHandler chan []byte
 
 func main() {
 	// set the limit of connection
@@ -33,7 +33,7 @@ func main() {
 
 	// init a connections pool
 	connectionsPool = &types.HttpConnectionPool{
-		Connections: make([]types.HttpConnection, connectionsLimitRate),
+		Connections: make([]types.HttpConnection, 0, connectionsLimitRate),
 	}
 	connectionsPool.SetPoolSize(connectionsLimitRate)
 
@@ -41,17 +41,19 @@ func main() {
 	connectionsPoolManager := &types.HttpConnectionPoolManager{}
 	connectionsPoolManager.ConnectionsPool = connectionsPool
 
-	loggingHandler = make(chan []byte, 3) // @todo: setup an actual logger
-	go func() {
-		// consume the logs to prevent blocking
-		fmt.Println(string(<-loggingHandler))
-	}()
-	connectionsPoolManager.SetLoggingHandler(loggingHandler)
+	/*
+		loggingHandler = make(chan []byte) // @todo: setup an actual logger
+		go func() {
+			// consume the logs to prevent blocking
+			fmt.Println(string(<-loggingHandler))
+		}()
 
-	loggingHandler <- []byte("initialization of connection pools done.")
+		connectionsPoolManager.SetLoggingHandler(loggingHandler)
 
-	loggingHandler <- []byte("about to create a connection.")
+		loggingHandler <- []byte("initialization of connection pools done.")
 
+		loggingHandler <- []byte("about to create a connection.")
+	*/
 	ctx, _ := context.WithDeadline(context.Background(), time.Now().Add(time.Minute))
 
 	connection = &types.HttpConnection{}
@@ -60,36 +62,46 @@ func main() {
 
 	connectionsPoolManager.RegisterConnection(connection)
 
-	loggingHandler <- []byte("connection registred with id = 1.")
+	//loggingHandler <- []byte("connection registred with id = 1.")
 
 	// test the time out and the clean
-	ticker := time.NewTicker(10 * time.Second)
+	ticker := time.NewTicker(time.Second)
+	timeOut := make(chan int)
 
-	go func(t *time.Ticker) {
+	go func() {
 		// this will force the select to ignore
-		// the ticker.C after 70seconds
+		// the ticker.C after 70seconds and enter
+		// the second case to quit the program
 		<-time.After(70 * time.Second)
-		t.C = nil
-	}(ticker)
+		timeOut <- 1
 
-	select {
-	case tick := <-ticker.C:
-		logMsg := fmt.Sprintf(
-			"tick @ [%d:%d:%d] | total connections count: %d | cleaned connections : %d ",
-			tick.Hour(),
-			tick.Minute(),
-			tick.Second(),
-			connectionsPoolManager.GetConnectionsCount(),
-			connectionsPoolManager.Clean(),
-		)
+		ticker.C = nil
+	}()
 
-		loggingHandler <- []byte(logMsg)
+	for {
 
-		// just for testing purposes, since the logger is not setup
-		fmt.Println(string(logMsg))
+		select {
+		case tick := <-ticker.C:
+			logMsg := fmt.Sprintf(
+				"tick @ [%d:%d:%d] | total connections count: %d | cleaned connections : %d ",
+				tick.Hour(),
+				tick.Minute(),
+				tick.Second(),
+				connectionsPoolManager.ConnectionsPool.GetConnectionsCount(),
+				connectionsPoolManager.ConnectionsPool.Clean(),
+			)
 
-	default:
-		fmt.Println("returning through the default case")
-		return
+			//loggingHandler <- []byte(logMsg)
+
+			// just for testing purposes, since the logger is not setup
+			fmt.Println(string(logMsg))
+
+		case <-time.After(2 * time.Minute):
+			// @todo: stop all the conccurent go routines
+			// stop the demo and quit
+			fmt.Println("returning...")
+			return
+
+		}
 	}
 }

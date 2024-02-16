@@ -128,7 +128,9 @@ func (p *HttpConnectionPool) Clean() int {
 	cleaned := 0
 
 	for _, conn := range p.Connections {
-		if !conn.IsAlive() {
+
+		// if id>0, conn is not initialized
+		if conn.id != 0 && !conn.IsAlive() {
 			cleaned++
 
 			// these fn calls will be fired in
