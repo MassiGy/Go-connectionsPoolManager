@@ -4,6 +4,7 @@ import (
 	"connectionsPoolManager/types"
 	"context"
 	"fmt"
+	"sync"
 	"time"
 )
 
@@ -25,7 +26,8 @@ var connectionsPool types.ConnectionsPool
 	var connectionsPoolManager types.ConnectionsPoolManager
 */
 
-// var loggingHandler chan []byte
+var loggingHandler chan []byte
+var waitGroup sync.WaitGroup
 
 func main() {
 	// set the limit of connection
@@ -35,25 +37,39 @@ func main() {
 	connectionsPool = &types.HttpConnectionPool{
 		Connections: make([]types.HttpConnection, 0, connectionsLimitRate),
 	}
-	connectionsPool.SetPoolSize(connectionsLimitRate)
+	connectionsPool.SetPoolSize(connectionsLimitRate) // pool size should'nt be exposed
 
 	// init a connection pool manager
 	connectionsPoolManager := &types.HttpConnectionPoolManager{}
 	connectionsPoolManager.ConnectionsPool = connectionsPool
 
-	/*
-		loggingHandler = make(chan []byte) // @todo: setup an actual logger
-		go func() {
-			// consume the logs to prevent blocking
-			fmt.Println(string(<-loggingHandler))
-		}()
+	loggingHandler = make(chan []byte) // @todo: setup an actual logger
 
-		connectionsPoolManager.SetLoggingHandler(loggingHandler)
+	waitGroup.Add(1) // register following go routine
+	go func() {
+		// consume the logs to prevent blocking
+		// as long as the channel is not closed
+		for {
+			msg, ok := <-loggingHandler
 
-		loggingHandler <- []byte("initialization of connection pools done.")
+			if !ok {
+				// break to unregister self from waitGrp
+				break
+			}
 
-		loggingHandler <- []byte("about to create a connection.")
-	*/
+			// print the message
+			fmt.Println(string(msg))
+		}
+
+		waitGroup.Done()
+	}()
+
+	connectionsPoolManager.SetLoggingHandler(loggingHandler)
+
+	loggingHandler <- []byte("initialization of connection pools done.")
+
+	loggingHandler <- []byte("about to create a connection.")
+
 	ctx, _ := context.WithDeadline(context.Background(), time.Now().Add(time.Minute))
 
 	connection = &types.HttpConnection{}
@@ -62,12 +78,13 @@ func main() {
 
 	connectionsPoolManager.RegisterConnection(connection)
 
-	//loggingHandler <- []byte("connection registred with id = 1.")
+	loggingHandler <- []byte("connection registred with id = 1.")
 
 	// test the time out and the clean
-	ticker := time.NewTicker(time.Second)
+	ticker := time.NewTicker(5 * time.Second)
 	timeOut := make(chan int)
 
+	waitGroup.Add(1) // register following go routine
 	go func() {
 		// this will force the select to ignore
 		// the ticker.C after 70seconds and enter
@@ -76,6 +93,8 @@ func main() {
 		timeOut <- 1
 
 		ticker.C = nil
+
+		waitGroup.Done()
 	}()
 
 	for {
@@ -83,7 +102,7 @@ func main() {
 		select {
 		case tick := <-ticker.C:
 			logMsg := fmt.Sprintf(
-				"tick @ [%d:%d:%d] | total connections count: %d | cleaned connections : %d ",
+				"tick @ [%d:%d:%d]\t|total connections count: %d\t|cleaned connections : %d",
 				tick.Hour(),
 				tick.Minute(),
 				tick.Second(),
@@ -91,23 +110,18 @@ func main() {
 				connectionsPoolManager.ConnectionsPool.Clean(),
 			)
 
-			//loggingHandler <- []byte(logMsg)
+			loggingHandler <- []byte(logMsg)
 
-			// just for testing purposes, since the logger is not setup
-			fmt.Println(string(logMsg))
+		case <-timeOut:
+			// stop the logs consumption go routine
+			close(loggingHandler)
 
-		/*
+			// wait for all goroutines to finish
+			waitGroup.Wait()
 
-			We should not set time.After in here since it
-			will be reset to 0s each iteration, so this will
-			take more then 2 minutes to kick in.
-		*/
-		case <-time.After(2 * time.Minute):
-			// @todo: stop all the conccurent go routines
 			// stop the demo and quit
-			fmt.Println("returning...")
+			fmt.Println("quitting...")
 			return
-
 		}
 	}
 }
