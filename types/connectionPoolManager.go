@@ -144,6 +144,12 @@ func (p *HttpConnectionPool) Clean() int {
 
 type HttpConnectionPoolManager struct {
 	ConnectionsPool
+
+	// (NOTE) right now the logging handler does
+	// not do much for HttpConnectionsPoolManager
+	// but it will be useful if we had more methods
+	// specific to this type where we can log diffrent
+	// actions, like init, notifications...
 	loggingHandler chan<- []byte
 }
 

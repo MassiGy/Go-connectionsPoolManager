@@ -12,38 +12,18 @@ var connectionsLimitRate int
 var connection types.Connection
 var connectionsPool types.ConnectionsPool
 
-/*
-	we can not declare the connectionsPoolManager as a variable
-	that implements ConnectionsPoolManager interface since we
-	need to acces the embbeded type ConnectionsPool, and we
-	can only do that through a concret type. Nevertheless,
-	connectionsPoolManager variables can be considered as
-	a types.ConnectionsPoolManager statifyign object, so we can
-	pass it to any function that requires that interface
+// for connectionsPoolManager we need a concret type to
+// access the embbeded type types.ConnectionPool, we can
+// not do so through an interface based type declaration
+var connectionsPoolManager *types.HttpConnectionPoolManager
 
-	(Note)	This was what causing the seg fault
+var loggingHandler chan []byte //@todo: setup an actual logger
 
-	var connectionsPoolManager types.ConnectionsPoolManager
-*/
-
-var loggingHandler chan []byte
+// wGrp to keep track of our goroutines
 var waitGroup sync.WaitGroup
 
 func main() {
-	// set the limit of connection
-	connectionsLimitRate = 8
-
-	// init a connections pool
-	connectionsPool = &types.HttpConnectionPool{
-		Connections: make([]types.HttpConnection, 0, connectionsLimitRate),
-	}
-	connectionsPool.SetPoolSize(connectionsLimitRate) // pool size should'nt be exposed
-
-	// init a connection pool manager
-	connectionsPoolManager := &types.HttpConnectionPoolManager{}
-	connectionsPoolManager.ConnectionsPool = connectionsPool
-
-	loggingHandler = make(chan []byte) // @todo: setup an actual logger
+	loggingHandler = make(chan []byte)
 
 	waitGroup.Add(1) // register following go routine
 	go func() {
@@ -64,11 +44,28 @@ func main() {
 		waitGroup.Done()
 	}()
 
-	connectionsPoolManager.SetLoggingHandler(loggingHandler)
+	connectionsLimitRate = 8
+	loggingHandler <- []byte(fmt.Sprintf("Connections pool size set to %d.", connectionsLimitRate))
 
-	loggingHandler <- []byte("initialization of connection pools done.")
+	// init a connections pool
+	connectionsPool = &types.HttpConnectionPool{
+		Connections: make([]types.HttpConnection, 0, connectionsLimitRate),
+	}
+	connectionsPool.SetPoolSize(connectionsLimitRate) // pool size should'nt be exposed
 
-	loggingHandler <- []byte("about to create a connection.")
+	// init a connection pool manager
+	connectionsPoolManager = &types.HttpConnectionPoolManager{}
+	connectionsPoolManager.ConnectionsPool = connectionsPool
+
+	/*
+		Right now we do not have any methods in the Connections
+		Pool Manager interface that take advantage of the logger
+
+		connectionsPoolManager.SetLoggingHandler(loggingHandler)
+	*/
+	loggingHandler <- []byte("Initialization of connection pools done.")
+
+	loggingHandler <- []byte("About to create a connection.")
 
 	ctx, _ := context.WithDeadline(context.Background(), time.Now().Add(time.Minute))
 
@@ -78,10 +75,12 @@ func main() {
 
 	connectionsPoolManager.RegisterConnection(connection)
 
-	loggingHandler <- []byte("connection registred with id = 1.")
+	loggingHandler <- []byte(fmt.Sprintf("Connection registred with id = %d.", connection.GetId()))
 
 	// test the time out and the clean
 	ticker := time.NewTicker(5 * time.Second)
+	loggingHandler <- []byte("Connections Pool monitoring time cycle set to 5s.")
+
 	timeOut := make(chan int)
 
 	waitGroup.Add(1) // register following go routine
@@ -89,6 +88,8 @@ func main() {
 		// this will force the select to ignore
 		// the ticker.C after 70seconds and enter
 		// the second case to quit the program
+		loggingHandler <- []byte("Connections Pool monitoring time out set to 70s.")
+
 		<-time.After(70 * time.Second)
 		timeOut <- 1
 
@@ -102,7 +103,7 @@ func main() {
 		select {
 		case tick := <-ticker.C:
 			logMsg := fmt.Sprintf(
-				"tick @ [%d:%d:%d]\t|total connections count: %d\t|cleaned connections : %d",
+				"Tick @ [%d:%d:%d]\t|total connections count: %d\t|cleaned connections : %d",
 				tick.Hour(),
 				tick.Minute(),
 				tick.Second(),
@@ -120,7 +121,7 @@ func main() {
 			waitGroup.Wait()
 
 			// stop the demo and quit
-			fmt.Println("quitting...")
+			fmt.Println("Quitting...")
 			return
 		}
 	}
