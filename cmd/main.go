@@ -96,6 +96,12 @@ func main() {
 			// just for testing purposes, since the logger is not setup
 			fmt.Println(string(logMsg))
 
+		/*
+
+			We should not set time.After in here since it
+			will be reset to 0s each iteration, so this will
+			take more then 2 minutes to kick in.
+		*/
 		case <-time.After(2 * time.Minute):
 			// @todo: stop all the conccurent go routines
 			// stop the demo and quit
