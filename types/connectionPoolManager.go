@@ -100,7 +100,7 @@ func (p *HttpConnectionPool) RegisterConnection(c Connection) error {
 		return errors.New("Connection not valid")
 	}
 
-	if len(p.Connections)+1 > p.poolSize {
+	if cap(p.Connections) < 1 {
 		return errors.New("Pool is full.")
 	}
 

@@ -8,8 +8,23 @@ import (
 )
 
 var connectionsLimitRate int
+var connection types.Connection
 var connectionsPool types.ConnectionsPool
-var connectionsPoolManager types.ConnectionsPoolManager
+
+/*
+	we can not declare the connectionsPoolManager as a variable
+	that implements ConnectionsPoolManager interface since we
+	need to acces the embbeded type ConnectionsPool, and we
+	can only do that through a concret type. Nevertheless,
+	connectionsPoolManager variables can be considered as
+	a types.ConnectionsPoolManager statifyign object, so we can
+	pass it to any function that requires that interface
+
+	(Note)	This was what causing the seg fault
+
+	var connectionsPoolManager types.ConnectionsPoolManager
+*/
+
 var loggingHandler chan []byte
 
 func main() {
@@ -23,12 +38,13 @@ func main() {
 	connectionsPool.SetPoolSize(connectionsLimitRate)
 
 	// init a connection pool manager
-	connectionsPoolManager = &types.HttpConnectionPoolManager{}
+	connectionsPoolManager := &types.HttpConnectionPoolManager{}
+	connectionsPoolManager.ConnectionsPool = connectionsPool
 
 	loggingHandler = make(chan []byte, 3) // @todo: setup an actual logger
 	go func() {
 		// consume the logs to prevent blocking
-		fmt.Println(<-loggingHandler)
+		fmt.Println(string(<-loggingHandler))
 	}()
 	connectionsPoolManager.SetLoggingHandler(loggingHandler)
 
@@ -38,11 +54,11 @@ func main() {
 
 	ctx, _ := context.WithDeadline(context.Background(), time.Now().Add(time.Minute))
 
-	conn := &types.HttpConnection{}
-	conn.SetId(1)
-	conn.SetContext(ctx)
+	connection = &types.HttpConnection{}
+	connection.SetId(1)
+	connection.SetContext(ctx)
 
-	connectionsPoolManager.RegisterConnection(conn)
+	connectionsPoolManager.RegisterConnection(connection)
 
 	loggingHandler <- []byte("connection registred with id = 1.")
 
@@ -70,9 +86,10 @@ func main() {
 		loggingHandler <- []byte(logMsg)
 
 		// just for testing purposes, since the logger is not setup
-		fmt.Println(logMsg)
+		fmt.Println(string(logMsg))
 
 	default:
+		fmt.Println("returning through the default case")
 		return
 	}
 }
