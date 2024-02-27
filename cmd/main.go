@@ -1,7 +1,7 @@
 package main
 
 import (
-	"connectionsPoolManager/types"
+	connTypes "connectionsPoolManager/types/connectionsTypes"
 	"context"
 	"fmt"
 	"sync"
@@ -9,13 +9,13 @@ import (
 )
 
 var connectionsLimitRate int
-var connection types.Connection
-var connectionsPool types.ConnectionsPool
+var connection connTypes.Connection
+var connectionsPool connTypes.ConnectionsPool
 
 // for connectionsPoolManager we need a concret type to
-// access the embbeded type types.ConnectionPool, we can
+// access the embbeded type connTypes.ConnectionPool, we can
 // not do so through an interface based type declaration
-var connectionsPoolManager *types.HttpConnectionPoolManager
+var connectionsPoolManager *connTypes.HttpConnectionPoolManager
 
 var loggingHandler chan []byte //@todo: setup an actual logger
 
@@ -48,13 +48,13 @@ func main() {
 	loggingHandler <- []byte(fmt.Sprintf("Connections pool size set to %d.", connectionsLimitRate))
 
 	// init a connections pool
-	connectionsPool = &types.HttpConnectionPool{
-		Connections: make([]types.HttpConnection, 0, connectionsLimitRate),
+	connectionsPool = &connTypes.HttpConnectionPool{
+		Connections: make([]connTypes.HttpConnection, 0, connectionsLimitRate),
 	}
 	connectionsPool.SetPoolSize(connectionsLimitRate) // pool size should'nt be exposed
 
 	// init a connection pool manager
-	connectionsPoolManager = &types.HttpConnectionPoolManager{}
+	connectionsPoolManager = &connTypes.HttpConnectionPoolManager{}
 	connectionsPoolManager.ConnectionsPool = connectionsPool
 
 	/*
@@ -69,7 +69,7 @@ func main() {
 
 	ctx, _ := context.WithDeadline(context.Background(), time.Now().Add(time.Minute))
 
-	connection = &types.HttpConnection{}
+	connection = &connTypes.HttpConnection{}
 	connection.SetId(1)
 	connection.SetContext(ctx)
 
