@@ -1,29 +1,53 @@
 package connectionstypes
 
+import (
+	loggertypes "connectionsPoolManager/types/loggerTypes"
+	"fmt"
+	"time"
+)
+
 type ConnectionsPoolManager interface {
 	// embbed the interface type to get
 	// all the method set that defines it
 	ConnectionsPool
 
 	// extra functionnality
-	GetLoggingHandler() chan<- []byte
-	SetLoggingHandler(chan<- []byte)
+	GetLoggingHandler() loggertypes.LogQueuer
+	SetLoggingHandler(loggertypes.LogQueuer)
+	Monitor(monitoringPeriod time.Duration, monitoringIntervals time.Duration)
 }
 
 type HttpConnectionPoolManager struct {
 	ConnectionsPool
 
-	// (NOTE) right now the logging handler does
-	// not do much for HttpConnectionsPoolManager
-	// but it will be useful if we had more methods
-	// specific to this type where we can log diffrent
-	// actions, like init, notifications...
-	loggingHandler chan<- []byte
+	loggingHandler loggertypes.LogQueuer
 }
 
-func (pm HttpConnectionPoolManager) GetLoggingHandler() chan<- []byte {
+func (pm HttpConnectionPoolManager) GetLoggingHandler() loggertypes.LogQueuer {
 	return pm.loggingHandler
 }
-func (pm *HttpConnectionPoolManager) SetLoggingHandler(loggingHandler chan<- []byte) {
+func (pm *HttpConnectionPoolManager) SetLoggingHandler(loggingHandler loggertypes.LogQueuer) {
 	pm.loggingHandler = loggingHandler
+}
+
+func (pm *HttpConnectionPoolManager) Monitor(monitoringPeriod time.Duration, monitoringIntervals time.Duration) {
+	ticker := time.NewTicker(monitoringIntervals)
+	timeoutChan := time.After(monitoringPeriod)
+
+	for {
+
+		select {
+		case <-ticker.C:
+			logMsg := fmt.Sprintf(
+				"Total connections count: %d\t|cleaned connections : %d\n",
+				pm.ConnectionsPool.GetConnectionsCount(),
+				pm.ConnectionsPool.Clean(),
+			)
+			pm.loggingHandler.EnQueue([]byte(logMsg))
+
+		case <-timeoutChan:
+			pm.loggingHandler.EnQueue([]byte("Ending monitoring for the connection pool manager\n"))
+			return
+		}
+	}
 }

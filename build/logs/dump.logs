@@ -1,0 +1,94 @@
+Start of tick ===============
+
+[13:46:20]	@simpleLogger:	(INFO)	Connections pool size set to 8.
+
+[13:46:20]	@simpleLogger:	(INFO)	Initialization of connection pools done.
+
+[13:46:20]	@simpleLogger:	(INFO)	About to create a connection.
+
+[13:46:20]	@simpleLogger:	(INFO)	Connection registred with id = 1.
+
+[13:46:20]	@simpleLogger:	(INFO)	Connections Pool monitoring time cycle set to 3s.
+
+[13:46:20]	@simpleLogger:	(INFO)	Connections Pool monitoring time period set to 70s.
+End of tick ===============
+Start of tick ===============
+End of tick ===============
+Start of tick ===============
+End of tick ===============
+Start of tick ===============
+
+[13:46:23]	@simpleLogger:	(INFO)	Total connections count: 1	|cleaned connections : 0
+End of tick ===============
+Start of tick ===============
+End of tick ===============
+Start of tick ===============
+End of tick ===============
+Start of tick ===============
+
+[13:46:26]	@simpleLogger:	(INFO)	Total connections count: 1	|cleaned connections : 0
+End of tick ===============
+Start of tick ===============
+End of tick ===============
+Start of tick ===============
+End of tick ===============
+Start of tick ===============
+
+[13:46:29]	@simpleLogger:	(INFO)	Total connections count: 1	|cleaned connections : 0
+End of tick ===============
+Start of tick ===============
+End of tick ===============
+Start of tick ===============
+End of tick ===============
+Start of tick ===============
+
+[13:46:32]	@simpleLogger:	(INFO)	Total connections count: 1	|cleaned connections : 0
+End of tick ===============
+Start of tick ===============
+End of tick ===============
+Start of tick ===============
+End of tick ===============
+Start of tick ===============
+
+[13:46:35]	@simpleLogger:	(INFO)	Total connections count: 1	|cleaned connections : 0
+End of tick ===============
+Start of tick ===============
+End of tick ===============
+Start of tick ===============
+End of tick ===============
+Start of tick ===============
+
+[13:46:38]	@simpleLogger:	(INFO)	Total connections count: 1	|cleaned connections : 0
+End of tick ===============
+Start of tick ===============
+End of tick ===============
+Start of tick ===============
+End of tick ===============
+Start of tick ===============
+
+[13:46:41]	@simpleLogger:	(INFO)	Total connections count: 1	|cleaned connections : 0
+End of tick ===============
+Start of tick ===============
+End of tick ===============
+Start of tick ===============
+End of tick ===============
+Start of tick ===============
+
+[13:46:44]	@simpleLogger:	(INFO)	Total connections count: 1	|cleaned connections : 0
+End of tick ===============
+Start of tick ===============
+End of tick ===============
+Start of tick ===============
+End of tick ===============
+Start of tick ===============
+
+[13:46:47]	@simpleLogger:	(INFO)	Total connections count: 1	|cleaned connections : 0
+End of tick ===============
+Start of tick ===============
+End of tick ===============
+Start of tick ===============
+End of tick ===============
+Start of tick ===============
+
+[13:46:50]	@simpleLogger:	(INFO)	Total connections count: 1	|cleaned connections : 0
+End of tick ===============
